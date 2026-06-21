@@ -870,24 +870,18 @@ def enforcement_plan():
 
     plan = []
     for i, s in enumerate(scores):
-        score = s["congestion_impact_score"]
-        if score >= 70:
-            officers, tow, priority = 4, True, "Critical"
-        elif score >= 60:
-            officers, tow, priority = 3, True, "High"
-        elif score >= 50:
-            officers, tow, priority = 2, False, "Medium"
-        else:
-            officers, tow, priority = 1, False, "Low"
-
+        rec = smart_recommend(s)
         plan.append({
             "rank": i + 1,
             "station": s["police_station"],
             "violations": s["total_violations"],
-            "congestion_score": score,
-            "priority": priority,
-            "officers_recommended": officers,
-            "tow_truck_needed": tow,
+            "congestion_score": s["congestion_impact_score"],
+            "priority": rec["priority"],
+            "officers_recommended": rec["officers_recommended"],
+            "tow_truck_needed": rec["tow_truck_needed"],
+            "time_windows": rec["time_windows"],
+            "patrol_type": rec["patrol_type"],
+            "expected_reduction_pct": rec["expected_congestion_reduction_pct"],
             "peak_violation_ratio": s["peak_ratio"],
             "two_wheeler_pct": round(s["two_wheeler_pct"] * 100, 1),
         })

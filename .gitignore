@@ -1,0 +1,4 @@
+data/violations.csv 
+data/violations_cleaned.csv 
+__pycache__/ 
+flask.log 

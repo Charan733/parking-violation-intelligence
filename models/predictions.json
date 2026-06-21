@@ -1,0 +1,532 @@
+{
+  "dataset_info": {
+    "total_rows_in_source_file": 298450,
+    "rows_used_for_training": 298445,
+    "rows_retained_pct": 100.0,
+    "stations": 54,
+    "date_range": "2023-11-09 to 2024-04-08"
+  },
+  "model_metrics": {
+    "accuracy": 0.9152,
+    "precision": 0.9756,
+    "recall": 0.9188,
+    "f1_score": 0.9464,
+    "n_estimators": 150,
+    "training_samples": 238756,
+    "test_samples": 59689
+  },
+  "feature_importance": {
+    "station_enc": 0.6461,
+    "hour": 0.1388,
+    "violation_enc": 0.0527,
+    "is_peak": 0.0467,
+    "vehicle_enc": 0.036,
+    "is_peak_morning": 0.0311,
+    "month": 0.0205,
+    "day_of_week": 0.0179,
+    "is_peak_evening": 0.0069,
+    "is_weekend": 0.0034
+  },
+  "station_scores": [
+    {
+      "police_station": "Upparpet",
+      "total_violations": 34468,
+      "congestion_impact_score": 51.1,
+      "peak_ratio": 0.165,
+      "two_wheeler_pct": 0.431
+    },
+    {
+      "police_station": "Shivajinagar",
+      "total_violations": 28044,
+      "congestion_impact_score": 41.6,
+      "peak_ratio": 0.082,
+      "two_wheeler_pct": 0.434
+    },
+    {
+      "police_station": "HAL Old Airport",
+      "total_violations": 20819,
+      "congestion_impact_score": 38.1,
+      "peak_ratio": 0.058,
+      "two_wheeler_pct": 0.46
+    },
+    {
+      "police_station": "City Market",
+      "total_violations": 17646,
+      "congestion_impact_score": 35.7,
+      "peak_ratio": 0.268,
+      "two_wheeler_pct": 0.523
+    },
+    {
+      "police_station": "Malleshwaram",
+      "total_violations": 22200,
+      "congestion_impact_score": 32.3,
+      "peak_ratio": 0.053,
+      "two_wheeler_pct": 0.337
+    },
+    {
+      "police_station": "Vijayanagara",
+      "total_violations": 14652,
+      "congestion_impact_score": 29.9,
+      "peak_ratio": 0.057,
+      "two_wheeler_pct": 0.72
+    },
+    {
+      "police_station": "K.R. Pura",
+      "total_violations": 6546,
+      "congestion_impact_score": 28.6,
+      "peak_ratio": 0.423,
+      "two_wheeler_pct": 0.381
+    },
+    {
+      "police_station": "Kodigehalli",
+      "total_violations": 10916,
+      "congestion_impact_score": 25.4,
+      "peak_ratio": 0.1,
+      "two_wheeler_pct": 0.646
+    },
+    {
+      "police_station": "Mahadevapura",
+      "total_violations": 6187,
+      "congestion_impact_score": 23.2,
+      "peak_ratio": 0.15,
+      "two_wheeler_pct": 0.26
+    },
+    {
+      "police_station": "Rajajinagar",
+      "total_violations": 10998,
+      "congestion_impact_score": 22.7,
+      "peak_ratio": 0.07,
+      "two_wheeler_pct": 0.456
+    },
+    {
+      "police_station": "Whitefield",
+      "total_violations": 2303,
+      "congestion_impact_score": 22.6,
+      "peak_ratio": 0.139,
+      "two_wheeler_pct": 0.435
+    },
+    {
+      "police_station": "Magadi Road",
+      "total_violations": 8558,
+      "congestion_impact_score": 22.5,
+      "peak_ratio": 0.056,
+      "two_wheeler_pct": 0.675
+    },
+    {
+      "police_station": "Byatarayanapura",
+      "total_violations": 4555,
+      "congestion_impact_score": 21.8,
+      "peak_ratio": 0.197,
+      "two_wheeler_pct": 0.553
+    },
+    {
+      "police_station": "Banaswadi",
+      "total_violations": 3759,
+      "congestion_impact_score": 21.8,
+      "peak_ratio": 0.26,
+      "two_wheeler_pct": 0.391
+    },
+    {
+      "police_station": "Electronic City",
+      "total_violations": 4333,
+      "congestion_impact_score": 21.4,
+      "peak_ratio": 0.183,
+      "two_wheeler_pct": 0.585
+    },
+    {
+      "police_station": "Jeevanbheemanagar",
+      "total_violations": 6736,
+      "congestion_impact_score": 19.7,
+      "peak_ratio": 0.099,
+      "two_wheeler_pct": 0.368
+    },
+    {
+      "police_station": "Chikkajala",
+      "total_violations": 5834,
+      "congestion_impact_score": 18.9,
+      "peak_ratio": 0.274,
+      "two_wheeler_pct": 0.033
+    },
+    {
+      "police_station": "HSR Layout",
+      "total_violations": 5018,
+      "congestion_impact_score": 18.7,
+      "peak_ratio": 0.193,
+      "two_wheeler_pct": 0.516
+    },
+    {
+      "police_station": "Mico Layout",
+      "total_violations": 2588,
+      "congestion_impact_score": 18.1,
+      "peak_ratio": 0.088,
+      "two_wheeler_pct": 0.585
+    },
+    {
+      "police_station": "High ground",
+      "total_violations": 4951,
+      "congestion_impact_score": 18.0,
+      "peak_ratio": 0.089,
+      "two_wheeler_pct": 0.647
+    },
+    {
+      "police_station": "Ashok Nagar",
+      "total_violations": 3524,
+      "congestion_impact_score": 17.9,
+      "peak_ratio": 0.112,
+      "two_wheeler_pct": 0.647
+    },
+    {
+      "police_station": "Hennuru",
+      "total_violations": 892,
+      "congestion_impact_score": 17.6,
+      "peak_ratio": 0.247,
+      "two_wheeler_pct": 0.511
+    },
+    {
+      "police_station": "Yelahanka",
+      "total_violations": 2440,
+      "congestion_impact_score": 17.6,
+      "peak_ratio": 0.252,
+      "two_wheeler_pct": 0.505
+    },
+    {
+      "police_station": "Yeshwanthpura",
+      "total_violations": 2587,
+      "congestion_impact_score": 17.6,
+      "peak_ratio": 0.177,
+      "two_wheeler_pct": 0.382
+    },
+    {
+      "police_station": "Adugodi",
+      "total_violations": 3332,
+      "congestion_impact_score": 16.9,
+      "peak_ratio": 0.176,
+      "two_wheeler_pct": 0.484
+    },
+    {
+      "police_station": "Halasuru Gate",
+      "total_violations": 6294,
+      "congestion_impact_score": 16.9,
+      "peak_ratio": 0.085,
+      "two_wheeler_pct": 0.463
+    },
+    {
+      "police_station": "Pulikeshinagar(F.Town)",
+      "total_violations": 4136,
+      "congestion_impact_score": 16.0,
+      "peak_ratio": 0.099,
+      "two_wheeler_pct": 0.493
+    },
+    {
+      "police_station": "Jayanagara",
+      "total_violations": 3813,
+      "congestion_impact_score": 15.8,
+      "peak_ratio": 0.067,
+      "two_wheeler_pct": 0.488
+    },
+    {
+      "police_station": "V.V.Puram (C.Pet)",
+      "total_violations": 1556,
+      "congestion_impact_score": 15.8,
+      "peak_ratio": 0.263,
+      "two_wheeler_pct": 0.44
+    },
+    {
+      "police_station": "Chamarajpet",
+      "total_violations": 3795,
+      "congestion_impact_score": 15.7,
+      "peak_ratio": 0.174,
+      "two_wheeler_pct": 0.162
+    },
+    {
+      "police_station": "K.S. Layout",
+      "total_violations": 828,
+      "congestion_impact_score": 15.7,
+      "peak_ratio": 0.103,
+      "two_wheeler_pct": 0.336
+    },
+    {
+      "police_station": "Hebbala",
+      "total_violations": 3209,
+      "congestion_impact_score": 15.4,
+      "peak_ratio": 0.083,
+      "two_wheeler_pct": 0.631
+    },
+    {
+      "police_station": "Madiwala",
+      "total_violations": 1563,
+      "congestion_impact_score": 15.0,
+      "peak_ratio": 0.247,
+      "two_wheeler_pct": 0.264
+    },
+    {
+      "police_station": "Jalahalli",
+      "total_violations": 1160,
+      "congestion_impact_score": 14.8,
+      "peak_ratio": 0.095,
+      "two_wheeler_pct": 0.517
+    },
+    {
+      "police_station": "Banashankari",
+      "total_violations": 1202,
+      "congestion_impact_score": 14.6,
+      "peak_ratio": 0.057,
+      "two_wheeler_pct": 0.683
+    },
+    {
+      "police_station": "Basavanagudi",
+      "total_violations": 3604,
+      "congestion_impact_score": 14.6,
+      "peak_ratio": 0.06,
+      "two_wheeler_pct": 0.552
+    },
+    {
+      "police_station": "Bellandur",
+      "total_violations": 4964,
+      "congestion_impact_score": 14.6,
+      "peak_ratio": 0.13,
+      "two_wheeler_pct": 0.285
+    },
+    {
+      "police_station": "Wilson Garden",
+      "total_violations": 3108,
+      "congestion_impact_score": 14.5,
+      "peak_ratio": 0.121,
+      "two_wheeler_pct": 0.492
+    },
+    {
+      "police_station": "Kamakshipalya",
+      "total_violations": 1431,
+      "congestion_impact_score": 14.4,
+      "peak_ratio": 0.092,
+      "two_wheeler_pct": 0.617
+    },
+    {
+      "police_station": "Hulimavu",
+      "total_violations": 2395,
+      "congestion_impact_score": 14.0,
+      "peak_ratio": 0.264,
+      "two_wheeler_pct": 0.304
+    },
+    {
+      "police_station": "Cubbon Park",
+      "total_violations": 3255,
+      "congestion_impact_score": 13.8,
+      "peak_ratio": 0.095,
+      "two_wheeler_pct": 0.432
+    },
+    {
+      "police_station": "J.P. Nagar",
+      "total_violations": 1637,
+      "congestion_impact_score": 13.1,
+      "peak_ratio": 0.141,
+      "two_wheeler_pct": 0.426
+    },
+    {
+      "police_station": "Peenya",
+      "total_violations": 974,
+      "congestion_impact_score": 12.7,
+      "peak_ratio": 0.156,
+      "two_wheeler_pct": 0.307
+    },
+    {
+      "police_station": "Chikkabanavara",
+      "total_violations": 785,
+      "congestion_impact_score": 12.3,
+      "peak_ratio": 0.134,
+      "two_wheeler_pct": 0.378
+    },
+    {
+      "police_station": "Sheshadripuram",
+      "total_violations": 3090,
+      "congestion_impact_score": 12.2,
+      "peak_ratio": 0.071,
+      "two_wheeler_pct": 0.416
+    },
+    {
+      "police_station": "Halasur",
+      "total_violations": 4011,
+      "congestion_impact_score": 11.6,
+      "peak_ratio": 0.058,
+      "two_wheeler_pct": 0.231
+    },
+    {
+      "police_station": "Kengeri",
+      "total_violations": 464,
+      "congestion_impact_score": 11.5,
+      "peak_ratio": 0.047,
+      "two_wheeler_pct": 0.356
+    },
+    {
+      "police_station": "R.T. Nagar",
+      "total_violations": 1736,
+      "congestion_impact_score": 10.0,
+      "peak_ratio": 0.077,
+      "two_wheeler_pct": 0.374
+    },
+    {
+      "police_station": "Sadashivanagar",
+      "total_violations": 1445,
+      "congestion_impact_score": 9.8,
+      "peak_ratio": 0.053,
+      "two_wheeler_pct": 0.311
+    },
+    {
+      "police_station": "Thalagattapura",
+      "total_violations": 870,
+      "congestion_impact_score": 9.4,
+      "peak_ratio": 0.053,
+      "two_wheeler_pct": 0.378
+    },
+    {
+      "police_station": "No Police Station",
+      "total_violations": 339,
+      "congestion_impact_score": 9.0,
+      "peak_ratio": 0.1,
+      "two_wheeler_pct": 0.227
+    },
+    {
+      "police_station": "Jnanabharathi",
+      "total_violations": 1063,
+      "congestion_impact_score": 8.4,
+      "peak_ratio": 0.085,
+      "two_wheeler_pct": 0.195
+    },
+    {
+      "police_station": "K.G. Halli",
+      "total_violations": 892,
+      "congestion_impact_score": 6.6,
+      "peak_ratio": 0.068,
+      "two_wheeler_pct": 0.173
+    },
+    {
+      "police_station": "Devanahalli Airport",
+      "total_violations": 940,
+      "congestion_impact_score": 5.2,
+      "peak_ratio": 0.119,
+      "two_wheeler_pct": 0.039
+    }
+  ],
+  "clusters": [
+    {
+      "cluster": 13,
+      "violation_count": 51390,
+      "lat_center": 12.9782,
+      "lon_center": 77.577,
+      "top_station": "Upparpet",
+      "top_vehicle": "SCOOTER"
+    },
+    {
+      "cluster": 10,
+      "violation_count": 41453,
+      "lat_center": 12.9826,
+      "lon_center": 77.6084,
+      "top_station": "Shivajinagar",
+      "top_vehicle": "SCOOTER"
+    },
+    {
+      "cluster": 5,
+      "violation_count": 36690,
+      "lat_center": 13.0025,
+      "lon_center": 77.5561,
+      "top_station": "Malleshwaram",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 7,
+      "violation_count": 32201,
+      "lat_center": 12.9593,
+      "lon_center": 77.5799,
+      "top_station": "City Market",
+      "top_vehicle": "SCOOTER"
+    },
+    {
+      "cluster": 9,
+      "violation_count": 26399,
+      "lat_center": 12.9379,
+      "lon_center": 77.6956,
+      "top_station": "HAL Old Airport",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 8,
+      "violation_count": 24568,
+      "lat_center": 12.9675,
+      "lon_center": 77.5382,
+      "top_station": "Vijayanagara",
+      "top_vehicle": "SCOOTER"
+    },
+    {
+      "cluster": 1,
+      "violation_count": 16039,
+      "lat_center": 13.0,
+      "lon_center": 77.6958,
+      "top_station": "K.R. Pura",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 14,
+      "violation_count": 13119,
+      "lat_center": 12.9165,
+      "lon_center": 77.6275,
+      "top_station": "HSR Layout",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 4,
+      "violation_count": 10949,
+      "lat_center": 13.0773,
+      "lon_center": 77.5935,
+      "top_station": "Kodigehalli",
+      "top_vehicle": "SCOOTER"
+    },
+    {
+      "cluster": 11,
+      "violation_count": 10173,
+      "lat_center": 13.035,
+      "lon_center": 77.5879,
+      "top_station": "Kodigehalli",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 12,
+      "violation_count": 9241,
+      "lat_center": 12.9105,
+      "lon_center": 77.5789,
+      "top_station": "Jayanagara",
+      "top_vehicle": "SCOOTER"
+    },
+    {
+      "cluster": 2,
+      "violation_count": 8971,
+      "lat_center": 12.9717,
+      "lon_center": 77.6491,
+      "top_station": "Jeevanbheemanagar",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 3,
+      "violation_count": 6563,
+      "lat_center": 13.187,
+      "lon_center": 77.6748,
+      "top_station": "Chikkajala",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 0,
+      "violation_count": 6043,
+      "lat_center": 13.0352,
+      "lon_center": 77.5245,
+      "top_station": "Yeshwanthpura",
+      "top_vehicle": "CAR"
+    },
+    {
+      "cluster": 6,
+      "violation_count": 4646,
+      "lat_center": 12.8503,
+      "lon_center": 77.6554,
+      "top_station": "Electronic City",
+      "top_vehicle": "SCOOTER"
+    }
+  ]
+}

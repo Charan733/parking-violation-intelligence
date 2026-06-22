@@ -215,8 +215,8 @@
           </tbody>
         </table>
         <div class="ai-box orange" style="margin-top:16px;">
-          <div class="ai-tag">🏆 ONE-LINE PITCH</div><br>
-          <b>"We don't just detect parking violations — we tell officers exactly where and when to deploy, quantify impact before action, and simulate outcomes — an end-to-end decision intelligence system built on 298,445 real police records."</b>
+          <div class="ai-tag">📊 SYSTEM OUTCOME</div><br>
+          Top hotspot (Upparpet, 34,468 violations): deploying 4 officers prevents an estimated <b>13,780 violations</b> — a <b>40% congestion reduction</b> — computed via a transparent diminishing-returns deterrence model, fully visible in the Impact Simulator tab.
         </div>
       </div>
     </div>
@@ -694,12 +694,13 @@ async function loadSummaryStats() {
         <div style="font-size:22px;font-weight:700;color:#5EEAD4;">${ds.stations}</div>
         <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Police stations</div>
       </div>
-     <div style="font-size:22px;font-weight:700;color:#FB923C;">17</div>
-<div style="font-size:10px;color:#CCFBF1;margin-top:2px;">API endpoints</div>
-</div>
-<div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
-<div style="font-size:22px;font-weight:700;color:#5EEAD4;">12</div>
-<div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Dashboard tabs</div>
+      <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#FB923C;">17</div>
+        <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">API endpoints</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#5EEAD4;">12</div>
+        <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Dashboard tabs</div>
       </div>
     `;
   } catch (err) {
@@ -1220,36 +1221,27 @@ async function loadEnforcement() {
 
 // ── LIVE MAP ──
 let leafletMap = null;
-async function loadHotspots() {
+async function loadHotspotMap() {
+  if (leafletMap) return;
   try {
-    const [scoresRes, viiRes] = await Promise.all([
-      fetch(`${API_BASE}/api/station-scores`),
-      fetch(`${API_BASE}/api/violation-impact-index`)
-    ]);
-    const scores = await scoresRes.json();
-    const viiData = await viiRes.json();
-
-    const viiMap = {};
-    viiData.forEach(v => { viiMap[v.station] = v.violation_impact_index; });
-
-    document.getElementById('hotspot-table-body').innerHTML = scores.map((s, i) => {
-      const score = s.congestion_impact_score;
-      const vii = viiMap[s.police_station] ?? '—';
-      const sevClass = score >= 70 ? 'sev-c' : score >= 60 ? 'sev-h' : score >= 50 ? 'sev-m' : 'sev-l';
-      const sevLabel = score >= 70 ? 'Critical' : score >= 60 ? 'High' : score >= 50 ? 'Medium' : 'Low';
-      return `<tr>
-        <td><b>${i+1}</b></td>
-        <td><b>${s.police_station}</b></td>
-        <td>${s.total_violations.toLocaleString('en-IN')}</td>
-        <td><b style="color:${score>=70?'#DC2626':score>=60?'#D97706':'#059669'}">${score.toFixed(1)}</b></td>
-        <td><b style="color:var(--teal)">${vii}</b></td>
-        <td>${(s.peak_ratio*100).toFixed(1)}%</td>
-        <td>${(s.two_wheeler_pct*100).toFixed(1)}%</td>
-        <td><span class="sev ${sevClass}">${sevLabel}</span></td>
-      </tr>`;
-    }).join('');
+    const res = await fetch(`${API_BASE}/api/clusters`);
+    const clusters = await res.json();
+    leafletMap = L.map('hotspot-map').setView([12.9716, 77.5946], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 18 }).addTo(leafletMap);
+    const maxCount = Math.max(...clusters.map(c => c.violation_count));
+    clusters.forEach(c => {
+      const pct = c.violation_count / maxCount;
+      const radius = 8 + pct * 35;
+      const color = pct > 0.6 ? '#DC2626' : pct > 0.35 ? '#D97706' : '#059669';
+      L.circleMarker([c.lat_center, c.lon_center], { radius, fillColor: color, color, weight: 2, opacity: 0.8, fillOpacity: 0.45 })
+        .addTo(leafletMap)
+        .bindPopup(`<div style="font-family:sans-serif;min-width:180px;"><b style="font-size:14px;">${c.top_station}</b><br><span style="color:#64748B;font-size:12px;">${c.violation_count.toLocaleString('en-IN')} violations</span><br><span style="color:#64748B;font-size:12px;">Top vehicle: ${c.top_vehicle}</span></div>`);
+    });
+    const sorted = [...clusters].sort((a,b)=>b.violation_count-a.violation_count);
+    document.getElementById('map-coord-table').innerHTML = sorted.slice(0,10).map(c=>`<tr><td><b>${c.top_station}</b></td><td>${c.lat_center.toFixed(4)}</td><td>${c.lon_center.toFixed(4)}</td><td><b style="color:${c.violation_count>maxCount*0.6?'#DC2626':'#0D9488'}">${c.violation_count.toLocaleString('en-IN')}</b></td></tr>`).join('');
+    setTimeout(() => leafletMap.invalidateSize(), 200);
   } catch(err) {
-    document.getElementById('hotspot-table-body').innerHTML = `<tr><td colspan="8" class="error-box">Backend not connected</td></tr>`;
+    document.getElementById('hotspot-map').innerHTML = `<div class="error-box">⚠️ ${err.message}</div>`;
   }
 }
 

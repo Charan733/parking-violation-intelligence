@@ -140,8 +140,27 @@ hourly_density['is_hotspot_window'] = (hourly_density['violation_count'] >= dens
 df = df.merge(hourly_density[['police_station', 'hour', 'is_hotspot_window']],
                on=['police_station', 'hour'], how='left')
 
+# ── NEW: station-level explainable features ──
+# Instead of letting the model rely almost entirely on raw station identity
+# (station_enc), compute continuous features that capture WHY a station is
+# risky — density, peak-hour concentration, vehicle mix. This lets the model
+# generalize ("any station with these traits is risky") rather than just
+# memorizing arbitrary station IDs.
+#station_hours_active = df.groupby('police_station')['hour'].nunique().clip(lower=1)
+#station_total = df.groupby('police_station').size()
+#station_density_map = (station_total / station_hours_active).to_dict()
+#df['station_violation_density'] = df['police_station'].map(station_density_map)
+
+#station_peak_map = df.groupby('police_station')['is_peak'].mean().to_dict()
+#df['station_peak_ratio'] = df['police_station'].map(station_peak_map)
+
+#station_2w_map = df.groupby('police_station')['vehicle_type'] \
+#                    .apply(lambda x: x.isin(['SCOOTER', 'MOTOR CYCLE']).mean()).to_dict()
+#df['station_two_wheeler_pct'] = df['police_station'].map(station_2w_map)
+
 print(f"   Created {df.shape[1]} features")
 print(f"   Hotspot window threshold: {density_threshold:.0f} violations/hour")
+print(f"   Added explainable station features: density, peak_ratio, two_wheeler_pct")
 
 # ─────────────────────────────────────────────
 # 4. TRAIN RANDOM FOREST

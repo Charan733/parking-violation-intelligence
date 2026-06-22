@@ -42,23 +42,7 @@ le_station = encoders['station']
 le_vehicle = encoders['vehicle']
 le_violation = encoders['violation']
 
-# ── Precompute station-level explainable features (must match train_model.py) ──
-# These give the live prediction endpoints the same 3 new features the model
-# was retrained on, so station identity isn't the only signal it relies on.
-_station_hours_active = df.groupby('police_station')['hour'].nunique().clip(lower=1)
-_station_total = df.groupby('police_station').size()
-STATION_DENSITY_MAP = (_station_total / _station_hours_active).to_dict()
-STATION_PEAK_MAP = df.groupby('police_station')['is_peak'].mean().to_dict()
-STATION_2W_MAP = df.groupby('police_station')['vehicle_type'] \
-                    .apply(lambda x: x.isin(['SCOOTER', 'MOTOR CYCLE']).mean()).to_dict()
 
-def get_station_features(station_name):
-    """Returns the 3 explainable station-level features for a given station."""
-    return {
-        "station_violation_density": STATION_DENSITY_MAP.get(station_name, 0),
-        "station_peak_ratio": STATION_PEAK_MAP.get(station_name, 0),
-        "station_two_wheeler_pct": STATION_2W_MAP.get(station_name, 0),
-    }
 
 
 # ─────────────────────────────────────────────
@@ -103,9 +87,6 @@ def station_scores():
     """Return Congestion Impact Score per police station, ranked."""
     scores = sorted(predictions_data["station_scores"],
                      key=lambda x: x["congestion_impact_score"], reverse=True)
-    # Add VII to each record so the frontend hotspot table can display it
-    for s in scores:
-        s["violation_impact_index"] = compute_violation_impact_index(s)
     return jsonify(scores)
 
 
@@ -492,7 +473,6 @@ def enforcement_schedule():
 
     is_weekend = int(day_of_week >= 5)
     schedule = []
-    station_feats = get_station_features(station_name)
 
     for hour in range(6, 22, 2):
         is_peak_morning = int(8 <= hour <= 11)
@@ -501,9 +481,6 @@ def enforcement_schedule():
 
         features = pd.DataFrame([{
             "station_enc": station_enc,
-            "station_violation_density": station_feats["station_violation_density"],
-            "station_peak_ratio": station_feats["station_peak_ratio"],
-            "station_two_wheeler_pct": station_feats["station_two_wheeler_pct"],
             "vehicle_enc": vehicle_enc,
             "violation_enc": violation_enc,
             "hour": hour,
@@ -854,12 +831,8 @@ def predict():
     is_peak_evening = int(17 <= hour <= 20)
     is_peak = int(is_peak_morning or is_peak_evening)
 
-    station_feats = get_station_features(payload["station"])
     features = pd.DataFrame([{
         "station_enc": station_enc,
-        "station_violation_density": station_feats["station_violation_density"],
-        "station_peak_ratio": station_feats["station_peak_ratio"],
-        "station_two_wheeler_pct": station_feats["station_two_wheeler_pct"],
         "vehicle_enc": vehicle_enc,
         "violation_enc": violation_enc,
         "hour": hour,

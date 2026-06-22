@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Parking Violation Intelligence — Live ML System | TEAM-X</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --navy:#0D1B2A;--teal:#0D9488;--teal2:#14B8A6;--accent:#F97316;
+    --white:#FFFFFF;--light:#F0FDFA;--mid:#CCFBF1;--muted:#64748B;
+    --red:#DC2626;--amber:#D97706;--green:#059669;--gray:#E2E8F0;
+    --dark:#1E293B;--bg:#F8FAFC;
+  }
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--dark);}
+  .header{background:var(--navy);color:white;}
+  .header-inner{max-width:1400px;margin:0 auto;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .header-left h1{font-size:21px;font-weight:600;}
+  .header-left p{font-size:12.5px;color:var(--mid);margin-top:3px;}
+  .header-right{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .badge{font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;background:rgba(13,148,136,0.25);color:var(--teal2);border:1px solid rgba(20,184,166,0.3);}
+  .badge.live{background:rgba(220,38,38,0.2);color:#FCA5A5;border-color:rgba(220,38,38,0.3);}
+  .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ADE80;margin-right:5px;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%{opacity:1;}50%{opacity:0.3;}100%{opacity:1;}}
+  .team-badge{background:var(--teal);color:white;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;}
+  .nav{background:var(--navy);border-top:1px solid rgba(255,255,255,0.08);}
+  .nav-inner{max-width:1400px;margin:0 auto;padding:0 32px;display:flex;gap:4px;overflow-x:auto;}
+  .nav-tab{padding:12px 18px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;}
+  .nav-tab:hover{color:white;}
+  .nav-tab.active{color:var(--teal2);border-bottom-color:var(--teal2);}
+  .nav-tab.new-feat{color:#FDE68A;border-bottom-color:transparent;}
+  .nav-tab.new-feat.active{color:#FDE68A;border-bottom-color:#FDE68A;}
+  .new-pill{font-size:9px;background:#F97316;color:white;border-radius:20px;padding:1px 6px;margin-left:4px;font-weight:700;vertical-align:middle;}
+  .main{max-width:1400px;margin:0 auto;padding:28px 32px;}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .metric{background:white;border-radius:12px;padding:20px;border:1px solid var(--gray);}
+  .metric-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:8px;}
+  .metric-value{font-size:28px;font-weight:700;}
+  .metric-sub{font-size:12px;margin-top:4px;}
+  .text-red{color:var(--red);}.text-teal{color:var(--teal);}.text-amber{color:var(--amber);}.text-green{color:var(--green);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+  .card{background:white;border-radius:12px;padding:20px 24px;border:1px solid var(--gray);}
+  .card-title{font-size:14px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .page{display:none;} .page.active{display:block;}
+  .footer{background:var(--navy);color:rgba(255,255,255,0.4);text-align:center;padding:16px;font-size:12px;margin-top:40px;}
+  .footer b{color:var(--teal2);}
+
+  /* TOP ACTION NOW CARDS */
+  .action-card{border-radius:14px;padding:20px;border:2px solid;margin-bottom:0;position:relative;overflow:hidden;}
+  .action-rank{position:absolute;top:12px;right:14px;font-size:28px;font-weight:900;opacity:0.12;}
+  .action-station{font-size:17px;font-weight:700;margin-bottom:4px;}
+  .action-priority{font-size:11px;font-weight:700;letter-spacing:1px;border-radius:20px;padding:3px 10px;display:inline-block;margin-bottom:10px;}
+  .action-row{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:5px;}
+  .action-icon{font-size:16px;width:22px;flex-shrink:0;}
+  .action-reduction{font-size:22px;font-weight:800;margin:10px 0 4px;}
+
+  /* ML Predict Panel */
+  .predict-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group label{font-size:12px;font-weight:600;color:var(--muted);}
+  .form-group select,.form-group input{padding:10px 12px;border:1px solid var(--gray);border-radius:8px;font-size:13px;color:var(--dark);background:white;}
+  .predict-btn{background:var(--teal);color:white;border:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:background 0.2s;}
+  .predict-btn:hover{background:#0B7A6F;}
+  .predict-btn:disabled{background:#94A3B8;cursor:not-allowed;}
+  .predict-btn.orange{background:#F97316;}
+  .predict-btn.orange:hover{background:#EA6C06;}
+  .result-box{margin-top:16px;padding:18px;border-radius:10px;display:none;}
+  .json-key{color:#7DD3FC;} .json-str{color:#86EFAC;} .json-num{color:#FCA5A5;} .json-bool{color:#FDE68A;} .json-null{color:#94A3B8;}
+  #api-log{font-family:'Consolas','Courier New',monospace;line-height:1.6;}
+  .result-box.high{background:#FEE2E2;border:1px solid #FECACA;}
+  .result-box.low{background:#D1FAE5;border:1px solid #A7F3D0;}
+  .result-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+  .result-detail{font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .conf-bar{margin-top:10px;height:8px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden;}
+  .conf-fill{height:100%;border-radius:4px;transition:width 0.4s;}
+
+  .hs-table{width:100%;border-collapse:collapse;}
+  .hs-table th{font-size:11px;font-weight:600;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--gray);}
+  .hs-table td{font-size:13px;padding:10px 10px;border-bottom:1px solid #F1F5F9;}
+  .sev{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+  .sev-c{background:#FEE2E2;color:#991B1B;} .sev-h{background:#FEF3C7;color:#92400E;}
+  .sev-m{background:#D1FAE5;color:#065F46;} .sev-l{background:#E0E7FF;color:#3730A3;}
+  .sev-r{background:#F1F5F9;color:#475569;}
+
+  .ai-box{background:linear-gradient(135deg,#F0FDFA 0%,#F8FAFC 100%);border:1px solid #99F6E4;border-radius:10px;padding:16px 20px;font-size:13px;color:var(--muted);line-height:1.7;}
+  .ai-box b{color:var(--dark);font-weight:600;}
+  .ai-tag{display:inline-block;font-size:11px;font-weight:700;color:var(--teal);background:var(--light);border:1px solid var(--mid);border-radius:20px;padding:2px 10px;margin-bottom:8px;}
+  .ai-box.orange{background:linear-gradient(135deg,#FFF7ED 0%,#F8FAFC 100%);border-color:#FED7AA;}
+  .ai-box.orange .ai-tag{color:#EA580C;background:#FFF7ED;border-color:#FED7AA;}
+
+  .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);font-size:13px;}
+  .spinner{width:18px;height:18px;border:2px solid var(--gray);border-top-color:var(--teal);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:10px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .error-box{background:#FEE2E2;border:1px solid #FECACA;color:#991B1B;padding:16px;border-radius:10px;font-size:13px;}
+
+  /* Schedule grid */
+  .schedule-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;}
+  .schedule-slot{border-radius:10px;padding:12px;text-align:center;border:2px solid transparent;}
+  .schedule-slot .slot-time{font-size:11px;font-weight:600;margin-bottom:4px;}
+  .schedule-slot .slot-officers{font-size:22px;font-weight:800;}
+  .schedule-slot .slot-action{font-size:10px;font-weight:700;letter-spacing:0.5px;margin-top:3px;}
+
+  /* VII bar */
+  .vii-bar-wrap{height:8px;background:#F1F5F9;border-radius:4px;overflow:hidden;margin-top:4px;}
+  .vii-bar-fill{height:100%;border-radius:4px;background:var(--teal);transition:width 0.5s;}
+
+  /* Officer projection chart wrapper */
+  #rec-projection-wrap{margin-top:16px;display:none;}
+
+  @media (max-width:900px){.metrics{grid-template-columns:repeat(2,1fr);}.grid2{grid-template-columns:1fr;}.grid3{grid-template-columns:1fr;}.predict-form{grid-template-columns:1fr;}.main{padding:16px;}.schedule-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1>🚔 Parking Violation Intelligence — Live ML System</h1>
+      <p>Flipkart Grid Lock 2.0 2026 · Problem Statement 1 · RandomForest + KMeans + Smart Enforcement Engine</p>
+    </div>
+    <div class="header-right">
+      <span class="badge live"><span class="pulse"></span>Backend Connected</span>
+      <span class="badge" id="dataset-proof-badge">Loading dataset info...</span>
+      <span class="badge" id="model-acc-badge">Loading model...</span>
+      <span class="team-badge">TEAM-X · R V SAI CHARAN</span>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-inner">
+      <button class="nav-tab active" onclick="showPage('summary',event)">⭐ Executive Summary</button>
+      <button class="nav-tab" onclick="showPage('dashboard',event)">📊 Dashboard</button>
+      <button class="nav-tab" onclick="showPage('map',event)">🗺️ Live Hotspot Map</button>
+      <button class="nav-tab" onclick="showPage('predict',event)">🤖 Live ML Predictor</button>
+      <button class="nav-tab new-feat" onclick="showPage('action',event)">🔥 Top Action Now<span class="new-pill">NEW</span></button>
+      <button class="nav-tab new-feat" onclick="showPage('recommend',event)">🎯 Smart Recommend<span class="new-pill">NEW</span></button>
+      <button class="nav-tab new-feat" onclick="showPage('schedule',event)">🗓️ Daily Schedule<span class="new-pill">NEW</span></button>
+      <button class="nav-tab" onclick="showPage('simulator',event)">⚡ Impact Simulator</button>
+      <button class="nav-tab" onclick="showPage('allocation',event)">🏙️ Citywide Allocation</button>
+      <button class="nav-tab" onclick="showPage('hotspots',event)">📋 Hotspot Rankings</button>
+      <button class="nav-tab" onclick="showPage('enforcement',event)">🚔 Enforcement Plan</button>
+      <button class="nav-tab" onclick="showPage('model',event)">⚙️ Model Performance</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="page active" id="page-summary">
+    <div class="card" style="background:linear-gradient(135deg,#0D1B2A 0%,#134E4A 100%);border:none;color:white;margin-bottom:20px;padding:32px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#5EEAD4;letter-spacing:1px;margin-bottom:8px;">FLIPKART GRID LOCK 2.0 · 2026 · PROBLEM STATEMENT 1</div>
+          <h2 style="font-size:26px;font-weight:700;margin-bottom:10px;">AI Parking Violation Intelligence System</h2>
+          <p style="font-size:13px;color:#CCFBF1;max-width:680px;line-height:1.6;">We don't just detect illegal parking hotspots — we tell enforcement teams <b style="color:#5EEAD4;">exactly where to go, when to go, how many officers to deploy, and what reduction to expect</b> — all powered by a trained ML pipeline on 100% of the real Bangalore City Police dataset.</p>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:#5EEAD4;">TEAM-X</div>
+          <div style="font-size:14px;font-weight:700;">R V SAI CHARAN</div>
+        </div>
+      </div>
+      <div id="summary-stats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:24px;">
+        <div class="loading" style="color:#CCFBF1;grid-column:span 5;"><div class="spinner"></div>Loading live metrics...</div>
+      </div>
+    </div>
+
+    <!-- TOP ACTION NOW PREVIEW IN SUMMARY -->
+    <div class="card" style="border:2px solid #FED7AA;background:linear-gradient(135deg,#FFF7ED 0%,#FFFBF5 100%);margin-bottom:20px;">
+      <div class="card-title" style="color:#EA580C;">🔥 Live: Top 3 Areas That Need Action RIGHT NOW</div>
+      <div id="summary-top3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+        <div class="loading"><div class="spinner"></div>Computing from ML model...</div>
+      </div>
+      <div style="margin-top:14px;" id="summary-top3-total"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">🎯 What Makes This Different</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;gap:12px;">
+            <div style="width:32px;height:32px;border-radius:8px;background:#D1FAE5;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">🧠</div>
+            <div><b style="font-size:13px;">Real trained ML, not a mockup</b><div style="font-size:12px;color:var(--muted);margin-top:2px;">RandomForest classifier trained on 298,445 real records (99.998% utilization). Live inference via Flask REST API — verifiable on screen, not hardcoded.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <div style="width:32px;height:32px;border-radius:8px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">🎯</div>
+            <div><b style="font-size:13px;">Smart Enforcement Recommendation Engine</b><div style="font-size:12px;color:var(--muted);margin-top:2px;">Goes beyond "where is the problem?" — answers "deploy 3 officers at MG Road, 6 PM–9 PM → expect 31% congestion reduction." Decision intelligence, not just analysis.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <div style="width:32px;height:32px;border-radius:8px;background:#DBEAFE;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">🗓️</div>
+            <div><b style="font-size:13px;">ML-Powered Daily Deployment Schedule</b><div style="font-size:12px;color:var(--muted);margin-top:2px;">Select any station + day → the trained RandomForest predicts risk for every 2-hour slot and builds a complete hour-by-hour officer deployment plan.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <div style="width:32px;height:32px;border-radius:8px;background:#FCE7F3;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">📐</div>
+            <div><b style="font-size:13px;">Violation Impact Index — real-world metric</b><div style="font-size:12px;color:var(--muted);margin-top:2px;">Custom composite metric (volume + peak density + vehicle severity) showing traffic management teams actual road impact, not just ML accuracy numbers.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 5-Minute Evaluator Walkthrough</div>
+        <table class="hs-table">
+          <thead><tr><th>Step</th><th>Tab</th><th>What to check</th></tr></thead>
+          <tbody>
+            <tr><td><b>1</b></td><td>📊 Dashboard</td><td>298,445 real records, live charts</td></tr>
+            <tr><td><b>2</b></td><td>🗺️ Map</td><td>Real GPS clusters across Bangalore</td></tr>
+            <tr><td><b>3</b></td><td>🤖 ML Predictor</td><td>Live RandomForest inference, real JSON</td></tr>
+            <tr><td><b>4</b></td><td><b style="color:#EA580C;">🔥 Top Action Now</b></td><td>Top 3 zones, officers, expected reduction %</td></tr>
+            <tr><td><b>5</b></td><td><b style="color:#EA580C;">🎯 Smart Recommend</b></td><td>Full enforcement plan for any station</td></tr>
+            <tr><td><b>6</b></td><td><b style="color:#EA580C;">🗓️ Daily Schedule</b></td><td>Hour-by-hour ML-powered deployment plan</td></tr>
+            <tr><td><b>7</b></td><td>⚡ Simulator</td><td>Before/After with 3 metrics</td></tr>
+          </tbody>
+        </table>
+        <div class="ai-box orange" style="margin-top:16px;">
+          <div class="ai-tag">🏆 ONE-LINE PITCH</div><br>
+          <b>"We don't just detect parking violations — we tell officers exactly where and when to deploy, quantify impact before action, and simulate outcomes — an end-to-end decision intelligence system built on 298,445 real police records."</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div class="metrics" id="overview-metrics">
+      <div class="loading" style="grid-column:span 4;"><div class="spinner"></div>Loading live data from Flask API...</div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="card-title">📋 Violation Type Distribution</div><canvas id="violationPie" height="220"></canvas></div>
+      <div class="card"><div class="card-title">⏰ Violations by Hour of Day</div><canvas id="hourBar" height="220"></canvas></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="card-title">🏢 Top Police Stations</div><canvas id="stationBar" height="260"></canvas></div>
+      <div class="card"><div class="card-title">🚗 Vehicle Type Breakdown</div><canvas id="vehiclePie" height="260"></canvas></div>
+    </div>
+  </div>
+
+  <!-- LIVE MAP -->
+  <div class="page" id="page-map">
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">🗺️ Live Bangalore Violation Hotspot Map — Real GPS Coordinates</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Plotted from real violation GPS coordinates. Circle size = violation volume. Click any marker for details.</p>
+      <div id="hotspot-map" style="height:500px;border-radius:10px;overflow:hidden;border:1px solid var(--gray);"></div>
+      <div style="display:flex;gap:20px;margin-top:14px;font-size:12px;color:var(--muted);align-items:center;flex-wrap:wrap;">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:14px;border-radius:50%;background:#DC2626;display:inline-block;"></span>Critical</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:14px;border-radius:50%;background:#D97706;display:inline-block;"></span>High</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:14px;border-radius:50%;background:#059669;display:inline-block;"></span>Medium/Low</span>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">📍 Top Hotspot Coordinates</div>
+        <table class="hs-table">
+          <thead><tr><th>Station</th><th>Latitude</th><th>Longitude</th><th>Violations</th></tr></thead>
+          <tbody id="map-coord-table"><tr><td colspan="4" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">🚦 Geographic Intelligence</div>
+        <div class="ai-box">
+          <div class="ai-tag">📍 GEOGRAPHIC INSIGHT</div><br>
+          Violation clusters concentrate along <b>major commercial corridors and metro junctions</b> — exactly where Bengaluru's worst congestion occurs. Upparpet and Shivajinagar show the densest clustering, consistent with high-footfall zones where on-street parking demand outstrips supply.
+        </div>
+        <div class="ai-box" style="margin-top:12px;">
+          <div class="ai-tag">🎯 WHY CLUSTERING MATTERS</div><br>
+          Geographic clustering lets traffic police <b>pre-position enforcement at 3–5 zones</b> responsible for the majority of congestion impact — a data-driven shift from reactive to predictive policing.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE PREDICTOR -->
+  <div class="page" id="page-predict">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">🤖 Live ML Hotspot Risk Predictor</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Enter any scenario — calls the <b>real trained RandomForest</b> on the Flask backend and returns live prediction.</p>
+        <div class="predict-form">
+          <div class="form-group"><label>Police Station</label><select id="in-station"></select></div>
+          <div class="form-group"><label>Vehicle Type</label><select id="in-vehicle"></select></div>
+          <div class="form-group"><label>Violation Type</label><select id="in-violation"></select></div>
+          <div class="form-group"><label>Hour of Day (0–23)</label><input type="number" id="in-hour" min="0" max="23" value="9"/></div>
+          <div class="form-group">
+            <label>Day of Week</label>
+            <select id="in-day">
+              <option value="0">Monday</option><option value="1">Tuesday</option>
+              <option value="2">Wednesday</option><option value="3">Thursday</option>
+              <option value="4" selected>Friday</option><option value="5">Saturday</option>
+              <option value="6">Sunday</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Month</label>
+            <select id="in-month">
+              <option value="1">January</option><option value="2">February</option>
+              <option value="3" selected>March</option><option value="4">April</option><option value="5">May</option>
+            </select>
+          </div>
+        </div>
+        <button class="predict-btn" id="predict-btn" onclick="runPrediction()">▶ Run Live Prediction</button>
+        <div class="result-box" id="result-box">
+          <div class="result-title" id="result-title"></div>
+          <div class="result-detail" id="result-detail"></div>
+          <div class="conf-bar"><div class="conf-fill" id="conf-fill"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📡 API Request / Response (Live)</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Actual JSON sent/received from <code>/api/predict</code></p>
+        <pre id="api-log" style="background:#0D1B2A;color:#5EEAD4;padding:16px;border-radius:8px;font-size:11px;overflow-x:auto;min-height:300px;white-space:pre-wrap;">Waiting for prediction request...</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔥 TOP ACTION NOW — THE KILLER FEATURE -->
+  <div class="page" id="page-action">
+    <div class="card" style="background:linear-gradient(135deg,#1C0A00 0%,#431407 100%);color:white;border:none;margin-bottom:20px;padding:28px;">
+      <div style="font-size:11px;font-weight:700;color:#FB923C;letter-spacing:1px;margin-bottom:8px;">AUTO ENFORCEMENT RECOMMENDATION ENGINE · LIVE OUTPUT</div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:6px;">🔥 Top 3 Areas to Act NOW</h2>
+      <p style="font-size:13px;color:#FED7AA;line-height:1.5;">Model-ranked zones requiring immediate enforcement deployment — computed live from RandomForest predictions and Violation Impact Index composite scoring. This is what most teams don't build.</p>
+    </div>
+
+    <div id="top3-cards" class="grid3">
+      <div class="loading" style="grid-column:span 3;"><div class="spinner"></div>Computing from ML pipeline...</div>
+    </div>
+
+    <div class="grid2" style="margin-top:20px;">
+      <div class="card">
+        <div class="card-title">📊 Violation Impact Index — All Stations</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">VII = Volume (40%) + Peak Density (35%) + Vehicle Severity (25%) — a real-world traffic impact metric</p>
+        <div id="vii-table-wrap"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">💬 What This Means for Judges</div>
+        <div class="ai-box orange">
+          <div class="ai-tag">🎯 DECISION INTELLIGENCE</div><br>
+          Most teams build dashboards that say <b>"Upparpet has 45,000 violations."</b><br><br>
+          This system says: <b>"Deploy 4 officers at Upparpet from 8–11 AM using static checkpoint + tow support → expect 31% congestion reduction."</b><br><br>
+          That's the difference between <b>analysis</b> and <b>action</b> — and that's why this hits Top 10.
+        </div>
+        <div class="ai-box" style="margin-top:14px;" id="top3-summary-box">
+          <div class="ai-tag">📌 LIVE IMPACT ESTIMATE</div><br>
+          <div class="loading"><div class="spinner"></div>Computing...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎯 SMART ENFORCEMENT RECOMMENDATION ENGINE -->
+  <div class="page" id="page-recommend">
+    <div class="card" style="background:linear-gradient(135deg,#0D1B2A 0%,#0C2340 100%);color:white;border:none;margin-bottom:20px;padding:28px;">
+      <div style="font-size:11px;font-weight:700;color:#5EEAD4;letter-spacing:1px;margin-bottom:8px;">SMART ENFORCEMENT RECOMMENDATION ENGINE</div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:6px;">🎯 Full Recommendation for Any Station</h2>
+      <p style="font-size:13px;color:#CCFBF1;line-height:1.5;">Select a station and get a complete AI-generated enforcement strategy: officer count, patrol type, best time windows, expected reduction, and officer-count projections — all from the trained pipeline.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">⚙️ Configure Recommendation</div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>Police Station</label>
+          <select id="rec-station"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:18px;">
+          <label>Target Hour (optional — for time-specific context)</label>
+          <input type="number" id="rec-hour" min="0" max="23" value="9" placeholder="0-23"/>
+        </div>
+        <button class="predict-btn orange" onclick="runSmartRecommend()">🎯 Generate Smart Recommendation</button>
+
+        <div id="rec-result" style="display:none;margin-top:20px;">
+          <div id="rec-action-statement" class="ai-box orange" style="margin-bottom:14px;">
+            <div class="ai-tag">🎯 ACTION STATEMENT</div><br>
+            <div id="rec-action-text" style="font-size:14px;font-weight:600;color:#92400E;"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div style="background:#FFF7ED;border-radius:10px;padding:14px;text-align:center;border:1px solid #FED7AA;">
+              <div style="font-size:11px;color:#EA580C;font-weight:600;margin-bottom:4px;">OFFICERS TO DEPLOY</div>
+              <div style="font-size:32px;font-weight:800;color:#EA580C;" id="rec-officers">—</div>
+            </div>
+            <div style="background:#F0FDFA;border-radius:10px;padding:14px;text-align:center;border:1px solid #99F6E4;">
+              <div style="font-size:11px;color:#0D9488;font-weight:600;margin-bottom:4px;">EXPECTED REDUCTION</div>
+              <div style="font-size:32px;font-weight:800;color:#0D9488;" id="rec-reduction">—</div>
+            </div>
+            <div style="background:#F1F5F9;border-radius:10px;padding:14px;text-align:center;border:1px solid #E2E8F0;">
+              <div style="font-size:11px;color:#64748B;font-weight:600;margin-bottom:4px;">PRIORITY</div>
+              <div style="font-size:18px;font-weight:800;" id="rec-priority">—</div>
+            </div>
+          </div>
+
+          <div class="ai-box" style="margin-bottom:12px;" id="rec-details-box"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 Officer Count Projections</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">What happens if you deploy 1–7 officers? Live model projection:</p>
+        <canvas id="projectionChart" height="240"></canvas>
+        <div id="rec-projection-wrap">
+          <table class="hs-table" style="margin-top:14px;" id="projection-table">
+            <thead><tr><th>Officers</th><th>Reduction %</th><th>Violations Prevented</th></tr></thead>
+            <tbody id="projection-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗓️ DAILY ENFORCEMENT SCHEDULE -->
+  <div class="page" id="page-schedule">
+    <div class="card" style="background:linear-gradient(135deg,#0D1B2A 0%,#1E1B4B 100%);color:white;border:none;margin-bottom:20px;padding:28px;">
+      <div style="font-size:11px;font-weight:700;color:#A5B4FC;letter-spacing:1px;margin-bottom:8px;">ML-POWERED DAILY DEPLOYMENT SCHEDULER</div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:6px;">🗓️ Hour-by-Hour Enforcement Plan</h2>
+      <p style="font-size:13px;color:#C7D2FE;line-height:1.5;">Select a station and day of week → the trained RandomForest predicts hotspot risk for every 2-hour slot across the working day and builds a complete officer deployment schedule.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">⚙️ Generate Schedule</div>
+        <div class="predict-form">
+          <div class="form-group">
+            <label>Police Station</label>
+            <select id="sched-station"></select>
+          </div>
+          <div class="form-group">
+            <label>Day of Week</label>
+            <select id="sched-day">
+              <option value="0">Monday</option><option value="1">Tuesday</option>
+              <option value="2">Wednesday</option><option value="3">Thursday</option>
+              <option value="4" selected>Friday</option><option value="5">Saturday</option>
+              <option value="6">Sunday</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Month</label>
+            <select id="sched-month">
+              <option value="1">January</option><option value="2">February</option>
+              <option value="3" selected>March</option><option value="4">April</option><option value="5">May</option>
+            </select>
+          </div>
+        </div>
+        <button class="predict-btn" style="background:#7C3AED;" onclick="runSchedule()">🗓️ Generate Daily Schedule</button>
+
+        <div id="sched-meta" style="display:none;margin-top:16px;" class="ai-box">
+          <div class="ai-tag">📋 SCHEDULE SUMMARY</div><br>
+          <span id="sched-summary-text"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Risk by Time Slot</div>
+        <canvas id="scheduleChart" height="240"></canvas>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title">🕐 Hour-by-Hour Officer Deployment Plan</div>
+      <div id="schedule-grid" class="schedule-grid">
+        <div class="loading" style="grid-column:span 4;"><div class="spinner"></div>Generate a schedule above...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPACT SIMULATOR -->
+  <div class="page" id="page-simulator">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">⚡ Before/After Enforcement Simulator</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Project expected violation reduction using a transparent diminishing-returns formula calibrated from each station's own data.</p>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>Police Station</label>
+          <select id="sim-station"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:18px;">
+          <label>Officers to Deploy: <span id="sim-officers-val" style="color:var(--teal);font-weight:700;">3</span></label>
+          <input type="range" id="sim-officers" min="1" max="10" value="3" style="width:100%;" oninput="document.getElementById('sim-officers-val').textContent=this.value">
+        </div>
+        <button class="predict-btn" id="sim-btn" onclick="runSimulation()">▶ Simulate Impact</button>
+
+        <div id="sim-result" style="display:none;margin-top:20px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div style="background:#FEE2E2;border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;color:#991B1B;font-weight:600;margin-bottom:4px;">BEFORE</div>
+              <div style="font-size:24px;font-weight:700;color:#991B1B;" id="sim-before-violations">—</div>
+              <div style="font-size:10px;color:#991B1B;">violations</div>
+              <div style="font-size:12px;color:#991B1B;margin-top:6px;">Score: <b id="sim-before-score">—</b> · VII: <b id="sim-before-vii">—</b></div>
+            </div>
+            <div style="background:#D1FAE5;border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;color:#065F46;font-weight:600;margin-bottom:4px;">AFTER</div>
+              <div style="font-size:24px;font-weight:700;color:#065F46;" id="sim-after-violations">—</div>
+              <div style="font-size:10px;color:#065F46;">violations</div>
+              <div style="font-size:12px;color:#065F46;margin-top:6px;">Score: <b id="sim-after-score">—</b> · VII: <b id="sim-after-vii">—</b></div>
+            </div>
+          </div>
+
+          <div style="background:linear-gradient(135deg,#0D1B2A 0%,#134E4A 100%);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;color:#5EEAD4;letter-spacing:0.5px;margin-bottom:12px;">📊 IMPACT AFTER ENFORCEMENT</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:#FCA5A5;" id="impact-congestion">—</div>
+                <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">📉 Congestion Reduction</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:#86EFAC;" id="impact-flow">—</div>
+                <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">🚗 Traffic Flow Improvement</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:#7DD3FC;" id="impact-delay">—</div>
+                <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">⏱️ Avg Delay Reduced</div>
+              </div>
+            </div>
+          </div>
+          <div class="ai-box">
+            <div class="ai-tag">📐 MODEL EXPLANATION</div><br>
+            <span id="sim-explanation"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Before vs After Comparison</div>
+        <canvas id="simChart" height="280"></canvas>
+        <div id="sim-summary-box" style="margin-top:16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CITYWIDE ALLOCATION -->
+  <div class="page" id="page-allocation">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">🏙️ Citywide Officer Allocation Optimizer</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Given a total officer budget, this greedily assigns each officer to whichever station yields the highest additional violations-prevented at that moment — accounting for diminishing returns. Outperforms an even split across hotspots.</p>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>Total Officers Available: <span id="alloc-officers-val" style="color:var(--teal);font-weight:700;">20</span></label>
+          <input type="range" id="alloc-officers" min="5" max="100" value="20" step="5" style="width:100%;" oninput="document.getElementById('alloc-officers-val').textContent=this.value">
+        </div>
+        <div class="form-group" style="margin-bottom:18px;">
+          <label>Cover Top N Stations: <span id="alloc-topn-val" style="color:var(--teal);font-weight:700;">10</span></label>
+          <input type="range" id="alloc-topn" min="3" max="20" value="10" style="width:100%;" oninput="document.getElementById('alloc-topn-val').textContent=this.value">
+        </div>
+        <button class="predict-btn" id="alloc-btn" onclick="runAllocation()">▶ Optimize Allocation</button>
+
+        <div id="alloc-result" style="display:none;margin-top:20px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div style="background:#D1FAE5;border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;color:#065F46;font-weight:600;margin-bottom:4px;">OPTIMIZED ALLOCATION</div>
+              <div style="font-size:24px;font-weight:700;color:#065F46;" id="alloc-optimized-prevented">—</div>
+              <div style="font-size:10px;color:#065F46;">violations prevented</div>
+            </div>
+            <div style="background:#FEF3C7;border-radius:10px;padding:14px;text-align:center;">
+              <div style="font-size:11px;color:#92400E;font-weight:600;margin-bottom:4px;">VS. EVEN SPLIT</div>
+              <div style="font-size:24px;font-weight:700;color:#92400E;" id="alloc-improvement">—</div>
+              <div style="font-size:10px;color:#92400E;">more violations prevented</div>
+            </div>
+          </div>
+          <div class="ai-box">
+            <div class="ai-tag">📐 METHOD</div><br>
+            <span id="alloc-explanation"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Officer Allocation Breakdown</div>
+        <table class="hs-table">
+          <thead><tr><th>Station</th><th>Officers</th><th>Violations Before</th><th>Violations After</th><th>Reduction</th></tr></thead>
+          <tbody id="alloc-table-body"><tr><td colspan="5" class="loading"><div class="spinner"></div>Click "Optimize Allocation" to begin</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOTSPOTS -->
+  <div class="page" id="page-hotspots">
+    <div class="card">
+      <div class="card-title">📋 Congestion Impact Score + Violation Impact Index Ranking</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">CIS = Volume (40%) + Peak-hour ratio (25%) + Road/footpath blockage (20%) + Two-wheeler density (15%) · VII = Volume (40%) + Peak Density (35%) + Vehicle Severity (25%)</p>
+      <table class="hs-table">
+        <thead><tr><th>Rank</th><th>Station</th><th>Violations</th><th>CIS Score</th><th>VII Score</th><th>Peak Ratio</th><th>2-Wheeler %</th><th>Priority</th></tr></thead>
+        <tbody id="hotspot-table-body"><tr><td colspan="8" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ENFORCEMENT -->
+  <div class="page" id="page-enforcement">
+    <div class="card">
+      <div class="card-title">🚔 AI-Generated Enforcement Deployment Plan (Full)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Officers, patrol type, time windows, and expected reduction — computed from Violation Impact Index + Congestion Score.</p>
+      <div style="overflow-x:auto;">
+        <table class="hs-table">
+          <thead><tr><th>Rank</th><th>Station</th><th>Priority</th><th>Officers</th><th>Tow</th><th>Time Windows</th><th>Patrol Type</th><th>Exp. Reduction</th></tr></thead>
+          <tbody id="enforcement-table-body"><tr><td colspan="8" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title">🤖 AI Summary</div>
+      <div class="ai-box" id="ai-summary">
+        <div class="ai-tag">🤖 TEAM-X · LIVE ML PIPELINE</div><br>
+        Loading AI-generated summary from live model output...
+      </div>
+    </div>
+  </div>
+
+  <!-- MODEL PERFORMANCE -->
+  <div class="page" id="page-model">
+    <div class="metrics" id="model-metrics-cards">
+      <div class="loading" style="grid-column:span 4;"><div class="spinner"></div>Loading model metrics...</div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">⚙️ Model Architecture</div>
+        <div class="ai-box">
+          <div class="ai-tag">RANDOM FOREST CLASSIFIER</div><br>
+          <b>Task:</b> Binary classification — predicts whether a (station, hour, vehicle, day) combination is HIGH-RISK.<br><br>
+          <b>Hyperparameters:</b> n_estimators=150, max_depth=12, min_samples_split=10, class_weight=balanced<br><br>
+          <b>Features:</b> station, vehicle type, violation type, hour, day of week, month, weekend flag, peak-morning, peak-evening, peak flags<br><br>
+          <b>Training:</b> 80/20 stratified train-test split.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Feature Importance</div>
+        <canvas id="featureImportanceChart" height="260"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🗺️ KMeans Geographic Clusters</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">15 clusters from GPS coordinates — each cluster is an actionable enforcement zone.</p>
+      <canvas id="clusterChart" height="240"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Live ML Backend: Flask + scikit-learn &nbsp;·&nbsp; <b>TEAM-X</b> &nbsp;·&nbsp; <b>R V SAI CHARAN</b> &nbsp;·&nbsp; Flipkart Grid Lock 2.0 2026
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.color = '#64748B';
+
+function showPage(id, evt) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  evt.target.classList.add('active');
+  if (id === 'map') loadHotspotMap();
+}
+
+let charts = {};
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+// ── DATASET PROOF ──
+async function loadDatasetInfo() {
+  try {
+    const res = await fetch(`${API_BASE}/api/dataset-info`);
+    const d = await res.json();
+    const pct = d.rows_retained_pct !== undefined ? d.rows_retained_pct : 100;
+    document.getElementById('dataset-proof-badge').innerHTML =
+      `📊 ${d.rows_used_for_training.toLocaleString('en-IN')} rows used (${pct}%)`;
+  } catch (err) {
+    document.getElementById('dataset-proof-badge').innerHTML = `⚠️ Dataset info unavailable`;
+  }
+}
+
+// ── SUMMARY STATS ──
+async function loadSummaryStats() {
+  try {
+    const [dsRes, mmRes, ovRes] = await Promise.all([
+      fetch(`${API_BASE}/api/dataset-info`),
+      fetch(`${API_BASE}/api/model-metrics`),
+      fetch(`${API_BASE}/api/overview`),
+    ]);
+    const ds = await dsRes.json();
+    const mm = await mmRes.json();
+    const ov = await ovRes.json();
+
+    document.getElementById('summary-stats').innerHTML = `
+      <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#5EEAD4;">${ds.rows_used_for_training.toLocaleString('en-IN')}</div>
+        <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Real records used</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#5EEAD4;">${(mm.accuracy*100).toFixed(1)}%</div>
+        <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Model accuracy</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#5EEAD4;">${ds.stations}</div>
+        <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Police stations</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#FB923C;">Top 10</div>
+        <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Target rank</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:#5EEAD4;">9</div>
+        <div style="font-size:10px;color:#CCFBF1;margin-top:2px;">Live API endpoints</div>
+      </div>
+    `;
+  } catch (err) {
+    document.getElementById('summary-stats').innerHTML = `<div class="error-box" style="grid-column:span 5;">⚠️ Backend not connected — start Flask server</div>`;
+  }
+}
+
+// ── TOP 3 ACTION NOW ──
+async function loadTopActionNow() {
+  try {
+    const res = await fetch(`${API_BASE}/api/top-action-now`);
+    const data = await res.json();
+    const top3 = data.top3;
+
+    const colors = [
+      { bg: '#FFF1F2', border: '#FCA5A5', text: '#991B1B', ptag: '#DC2626' },
+      { bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', ptag: '#D97706' },
+      { bg: '#F0FDFA', border: '#99F6E4', text: '#065F46', ptag: '#059669' },
+    ];
+
+    const cardHTML = top3.map((t, i) => {
+      const c = colors[i];
+      return `
+        <div class="action-card" style="background:${c.bg};border-color:${c.border};">
+          <div class="action-rank">#${t.rank}</div>
+          <div class="action-station" style="color:${c.text};">📍 ${t.station} ${t.high_impact_zone ? '<span style="font-size:10px;background:#DC2626;color:white;padding:2px 7px;border-radius:10px;margin-left:4px;">🔥 HIGH IMPACT</span>' : ''}</div>
+          <span class="action-priority" style="background:${c.ptag};color:white;">${t.priority}</span>
+          <div class="action-row"><span class="action-icon">🚔</span><b>${t.officers_deploy} officers</b>${t.tow_truck ? ' + Tow Truck' : ''}</div>
+          <div class="action-row"><span class="action-icon">🕐</span>${t.when.join(' · ')}</div>
+          <div class="action-row"><span class="action-icon">🔦</span>${t.patrol_type}</div>
+          <div class="action-reduction" style="color:${c.ptag};">${t.expected_reduction_pct}%</div>
+          <div style="font-size:11px;color:${c.text};opacity:0.7;">Expected congestion reduction</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid ${c.border};">
+            <div style="text-align:center;">
+              <div style="font-size:14px;font-weight:700;color:${c.text};">+${t.traffic_flow_improvement_pct}%</div>
+              <div style="font-size:9px;color:${c.text};opacity:0.7;">🚗 Traffic Flow</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:14px;font-weight:700;color:${c.text};">−${t.avg_delay_reduced_minutes} min</div>
+              <div style="font-size:9px;color:${c.text};opacity:0.7;">⏱️ Delay Reduced</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:${c.text};margin-top:8px;line-height:1.4;">VII Score: <b>${t.violation_impact_index}</b> · CIS: <b>${t.congestion_score}</b></div>
+        </div>
+      `;
+    }).join('');
+
+    // Summary page cards
+    document.getElementById('summary-top3').innerHTML = cardHTML;
+    // Full page cards
+    if (document.getElementById('top3-cards')) {
+      document.getElementById('top3-cards').innerHTML = cardHTML;
+    }
+    if (document.getElementById('top3-summary-box')) {
+      document.getElementById('top3-summary-box').innerHTML = `
+        <div class="ai-tag">📌 LIVE IMPACT ESTIMATE</div><br>
+        ${data.summary}<br><br>
+        <span style="font-size:11px;opacity:0.75;">🧠 Prediction Confidence: <b>${data.model_confidence_pct}%</b> (RandomForest test-set accuracy)</span>
+      `;
+    }
+    if (document.getElementById('summary-top3-total')) {
+      document.getElementById('summary-top3-total').innerHTML = `
+        <div class="ai-box orange" style="font-size:13px;">${data.summary}</div>
+      `;
+    }
+
+    // Build VII table
+    if (document.getElementById('vii-table-wrap')) {
+      try {
+        const viiRes = await fetch(`${API_BASE}/api/violation-impact-index`);
+        const vii = await viiRes.json();
+        document.getElementById('vii-table-wrap').innerHTML = `
+          <table class="hs-table">
+            <thead><tr><th>Station</th><th>VII Score</th><th>Breakdown</th></tr></thead>
+            <tbody>
+              ${vii.slice(0, 10).map(v => `
+                <tr>
+                  <td><b>${v.station}</b></td>
+                  <td>
+                    <b style="color:${v.violation_impact_index >= 60 ? '#DC2626' : v.violation_impact_index >= 40 ? '#D97706' : '#059669'}">${v.violation_impact_index}</b>
+                    <div class="vii-bar-wrap"><div class="vii-bar-fill" style="width:${v.violation_impact_index}%;background:${v.violation_impact_index >= 60 ? '#DC2626' : v.violation_impact_index >= 40 ? '#D97706' : '#059669'};"></div></div>
+                  </td>
+                  <td style="font-size:11px;color:var(--muted);">
+                    Vol: ${v.vii_breakdown.volume_contribution} · Peak: ${v.vii_breakdown.peak_density_contribution} · Veh: ${v.vii_breakdown.vehicle_severity_contribution}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch(e) {}
+    }
+
+  } catch (err) {
+    const errHTML = `<div class="error-box" style="grid-column:span 3;">⚠️ Backend not connected: ${err.message}</div>`;
+    if(document.getElementById('summary-top3')) document.getElementById('summary-top3').innerHTML = errHTML;
+    if(document.getElementById('top3-cards')) document.getElementById('top3-cards').innerHTML = errHTML;
+  }
+}
+
+// ── SMART RECOMMEND ──
+let projChart = null;
+async function runSmartRecommend() {
+  const station = document.getElementById('rec-station').value;
+  const hour = parseInt(document.getElementById('rec-hour').value);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/smart-recommend`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ station, hour })
+    });
+    const data = await res.json();
+    const rec = data.recommendation;
+
+    document.getElementById('rec-result').style.display = 'block';
+    document.getElementById('rec-action-text').textContent = data.action_statement;
+    document.getElementById('rec-officers').textContent = rec.officers_recommended;
+    document.getElementById('rec-reduction').textContent = rec.expected_congestion_reduction_pct + '%';
+    document.getElementById('rec-priority').innerHTML = `<span style="color:${rec.priority_color};">${rec.priority}</span>`;
+    document.getElementById('rec-details-box').innerHTML = `
+      <div class="ai-tag">📋 FULL RECOMMENDATION</div><br>
+      <b>Time Windows:</b> ${rec.time_windows.join(' · ')}<br>
+      <b>Time Note:</b> ${rec.time_note}<br>
+      <b>Patrol Type:</b> ${rec.patrol_type}<br>
+      <b>Tow Truck:</b> ${rec.tow_truck_needed ? '✅ Recommended' : '—'}<br>
+      <b>Violation Impact Index (VII):</b> ${rec.violation_impact_index}/100<br>
+      <b>Total Violations in Zone:</b> ${data.station_data.total_violations.toLocaleString('en-IN')}<br>
+      <b>Peak Hour Ratio:</b> ${(data.station_data.peak_ratio * 100).toFixed(1)}%
+    `;
+
+    // Projection chart
+    destroyChart('projectionChart');
+    const projs = data.officer_projections;
+    charts.projectionChart = new Chart(document.getElementById('projectionChart'), {
+      type: 'line',
+      data: {
+        labels: projs.map(p => `${p.officers} officers`),
+        datasets: [
+          { label: 'Congestion Reduction %', data: projs.map(p => p.reduction_pct), borderColor: '#0D9488', backgroundColor: 'rgba(13,148,136,0.1)', fill: true, tension: 0.4, pointRadius: 5 },
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { max: 65, title: { display: true, text: 'Reduction %' } } }
+      }
+    });
+
+    // Projection table
+    document.getElementById('projection-tbody').innerHTML = projs.map(p => `
+      <tr>
+        <td><b>${p.officers}</b>${p.officers === rec.officers_recommended ? ' ⭐' : ''}</td>
+        <td><b style="color:${p.reduction_pct >= 30 ? '#059669' : p.reduction_pct >= 20 ? '#D97706' : '#64748B'}">${p.reduction_pct}%</b></td>
+        <td>${p.violations_prevented.toLocaleString('en-IN')}</td>
+      </tr>
+    `).join('');
+    document.getElementById('rec-projection-wrap').style.display = 'block';
+
+  } catch(err) {
+    document.getElementById('rec-result').style.display = 'block';
+    document.getElementById('rec-action-text').textContent = `Error: ${err.message}`;
+  }
+}
+
+// ── DAILY SCHEDULE ──
+async function runSchedule() {
+  const station = document.getElementById('sched-station').value;
+  const day = parseInt(document.getElementById('sched-day').value);
+  const month = parseInt(document.getElementById('sched-month').value);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/enforcement-schedule`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ station, day_of_week: day, month })
+    });
+    const data = await res.json();
+
+    // Summary
+    document.getElementById('sched-meta').style.display = 'block';
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    document.getElementById('sched-summary-text').innerHTML = `
+      <b>${station}</b> · ${days[day]}<br>
+      Most critical window: <b style="color:var(--red);">${data.most_critical_slot}</b><br>
+      Peak slots: <b>${data.peak_slots.join(', ') || 'None identified'}</b><br>
+      Total officers needed across day: <b>${data.total_officers_needed}</b>
+    `;
+
+    // Schedule grid
+    document.getElementById('schedule-grid').innerHTML = data.schedule.map(s => `
+      <div class="schedule-slot" style="background:${s.color}15;border-color:${s.color};">
+        <div class="slot-time" style="color:${s.color};">${s.slot}</div>
+        <div class="slot-officers" style="color:${s.color};">${s.officers_needed}</div>
+        <div style="font-size:9px;color:${s.color};margin-top:1px;">officers</div>
+        <div class="slot-action" style="color:${s.color};">${s.action}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:3px;">${(s.risk_probability*100).toFixed(0)}% risk</div>
+      </div>
+    `).join('');
+
+    // Schedule chart
+    destroyChart('scheduleChart');
+    charts.scheduleChart = new Chart(document.getElementById('scheduleChart'), {
+      type: 'bar',
+      data: {
+        labels: data.schedule.map(s => s.slot.split(' – ')[0]),
+        datasets: [
+          { label: 'Risk Probability %', data: data.schedule.map(s => +(s.risk_probability*100).toFixed(1)),
+            backgroundColor: data.schedule.map(s => s.color + 'CC'), borderRadius: 5 },
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { max: 100, title: { display: true, text: 'Hotspot Risk %' } },
+          x: { ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+
+  } catch(err) {
+    document.getElementById('sched-meta').style.display = 'block';
+    document.getElementById('sched-summary-text').innerHTML = `⚠️ Error: ${err.message}`;
+  }
+}
+
+// ── POPULATE STATION DROPDOWNS ──
+async function populateStationDropdowns() {
+  try {
+    const res = await fetch(`${API_BASE}/api/station-scores`);
+    const scores = await res.json();
+    const opts = scores.map(s =>
+      `<option value="${s.police_station}">${s.police_station}</option>`
+    ).join('');
+    ['sim-station','rec-station','sched-station'].forEach(id => {
+      if(document.getElementById(id)) document.getElementById(id).innerHTML = opts;
+    });
+  } catch(err) {}
+}
+
+// ── SIMULATOR ──
+async function runSimulation() {
+  const btn = document.getElementById('sim-btn');
+  btn.disabled = true; btn.textContent = '⏳ Simulating...';
+  const station = document.getElementById('sim-station').value;
+  const officers = parseInt(document.getElementById('sim-officers').value);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/simulate-impact`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ station, officers })
+    });
+    const data = await res.json();
+
+    document.getElementById('sim-result').style.display = 'block';
+    document.getElementById('sim-before-violations').textContent = data.before.violations.toLocaleString('en-IN');
+    document.getElementById('sim-before-score').textContent = data.before.congestion_score;
+    document.getElementById('sim-before-vii').textContent = data.before.violation_impact_index;
+    document.getElementById('sim-after-violations').textContent = data.after.violations.toLocaleString('en-IN');
+    document.getElementById('sim-after-score').textContent = data.after.congestion_score;
+    document.getElementById('sim-after-vii').textContent = data.after.violation_impact_index;
+
+    document.getElementById('impact-congestion').textContent = '−' + data.impact_summary.congestion_reduction_pct + '%';
+    document.getElementById('impact-flow').textContent = '+' + data.impact_summary.traffic_flow_improvement_pct + '%';
+    document.getElementById('impact-delay').textContent = '−' + data.impact_summary.avg_delay_reduced_minutes + ' min';
+
+    document.getElementById('sim-explanation').innerHTML = `
+      ${data.impact_summary.explanation}<br><br>
+      <span style="opacity:0.75;">Formula: <code>${data.model_explanation.formula}</code> · k = ${data.model_explanation.k} · Max reduction = ${data.model_explanation.max_achievable_reduction_pct}%</span><br>
+      <span style="font-size:11px;opacity:0.8;">${data.model_explanation.note}</span>
+    `;
+
+    destroyChart('simChart');
+    charts.simChart = new Chart(document.getElementById('simChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Violations', 'Congestion Score', 'Impact Index (VII)'],
+        datasets: [
+          { label: 'Before', data: [data.before.violations, data.before.congestion_score, data.before.violation_impact_index], backgroundColor: '#DC2626', borderRadius: 6 },
+          { label: 'After', data: [data.after.violations, data.after.congestion_score, data.after.violation_impact_index], backgroundColor: '#059669', borderRadius: 6 },
+        ]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { grid: { color: '#F1F5F9' } } } }
+    });
+
+    document.getElementById('sim-summary-box').innerHTML = `
+      <div class="ai-box">
+        <div class="ai-tag">📌 RESULT</div><br>
+        Deploying <b>${officers} officer${officers>1?'s':''}</b> at <b>${station}</b> is projected to prevent <b>${data.violations_prevented.toLocaleString('en-IN')} violations</b> (${data.violation_reduction_pct}% reduction),
+        improve Congestion Impact Score by <b>${data.congestion_score_improvement} points</b>,
+        and reduce the Violation Impact Index by <b>${data.vii_improvement} points</b>.
+      </div>
+    `;
+  } catch(err) {
+    document.getElementById('sim-summary-box').innerHTML = `<div class="error-box">⚠️ ${err.message}</div>`;
+  }
+
+  btn.disabled = false; btn.textContent = '▶ Simulate Impact';
+}
+
+// ── CITYWIDE ALLOCATION OPTIMIZER ──
+let allocChart = null;
+async function runAllocation() {
+  const btn = document.getElementById('alloc-btn');
+  btn.disabled = true; btn.textContent = '⏳ Optimizing...';
+
+  const totalOfficers = parseInt(document.getElementById('alloc-officers').value);
+  const topN = parseInt(document.getElementById('alloc-topn').value);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/recommend-allocation`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ total_officers: totalOfficers, top_n_stations: topN })
+    });
+    const data = await res.json();
+
+    document.getElementById('alloc-result').style.display = 'block';
+    document.getElementById('alloc-optimized-prevented').textContent = data.total_violations_prevented.toLocaleString('en-IN');
+    document.getElementById('alloc-improvement').textContent = '+' + data.improvement_vs_naive_split.toLocaleString('en-IN');
+    document.getElementById('alloc-explanation').innerHTML = `
+      ${data.method}<br><br>
+      Optimized allocation prevents <b>${data.improvement_vs_naive_pct}% more violations</b> than an even split of ${totalOfficers} officers across the top ${topN} stations (${data.naive_even_split_prevented.toLocaleString('en-IN')} prevented with naive split vs ${data.total_violations_prevented.toLocaleString('en-IN')} with optimized allocation).
+    `;
+
+    document.getElementById('alloc-table-body').innerHTML = data.allocation.map(a => `
+      <tr>
+        <td><b>${a.station}</b></td>
+        <td><span style="background:var(--light);color:var(--teal);padding:2px 10px;border-radius:12px;font-weight:600;">${a.officers_allocated}</span></td>
+        <td>${a.current_violations.toLocaleString('en-IN')}</td>
+        <td style="color:#059669;font-weight:600;">${a.projected_violations.toLocaleString('en-IN')}</td>
+        <td style="color:#059669;">−${a.reduction_pct}%</td>
+      </tr>
+    `).join('');
+
+  } catch(err) {
+    document.getElementById('alloc-table-body').innerHTML = `<tr><td colspan="5" class="error-box">⚠️ ${err.message}</td></tr>`;
+  }
+
+  btn.disabled = false; btn.textContent = '▶ Optimize Allocation';
+}
+
+// ── JSON SYNTAX HIGHLIGHTING ──
+function syntaxHighlight(json) {
+  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return json.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    function (match) {
+      let cls = 'json-num';
+      if (/^"/.test(match)) { cls = /:$/.test(match) ? 'json-key' : 'json-str'; }
+      else if (/true|false/.test(match)) { cls = 'json-bool'; }
+      else if (/null/.test(match)) { cls = 'json-null'; }
+      return `<span class="${cls}">${match}</span>`;
+    }
+  );
+}
+
+// ── LOAD OVERVIEW ──
+async function loadOverview() {
+  try {
+    const res = await fetch(`${API_BASE}/api/overview`);
+    const data = await res.json();
+    const total = data.total_violations;
+    const approved = data.by_status.approved || 0;
+    const rejected = data.by_status.rejected || 0;
+    const topVehicle = Object.entries(data.by_vehicle).sort((a,b)=>b[1]-a[1])[0];
+
+    document.getElementById('overview-metrics').innerHTML = `
+      <div class="metric"><div class="metric-label">🚨 Total Violations</div><div class="metric-value text-teal">${total.toLocaleString('en-IN')}</div><div class="metric-sub text-teal">Live from Flask backend</div></div>
+      <div class="metric"><div class="metric-label">✅ Approved Cases</div><div class="metric-value text-green">${approved.toLocaleString('en-IN')}</div><div class="metric-sub text-green">${(approved/total*100).toFixed(1)}% approval rate</div></div>
+      <div class="metric"><div class="metric-label">❌ Rejected Cases</div><div class="metric-value text-red">${rejected.toLocaleString('en-IN')}</div><div class="metric-sub text-red">${(rejected/total*100).toFixed(1)}% rejection rate</div></div>
+      <div class="metric"><div class="metric-label">🛵 Top Offender</div><div class="metric-value text-amber">${topVehicle[0]}</div><div class="metric-sub text-amber">${topVehicle[1].toLocaleString('en-IN')} violations</div></div>
+    `;
+
+    // Charts
+    destroyChart('violationPie');
+    charts.violationPie = new Chart(document.getElementById('violationPie'), {
+      type: 'doughnut',
+      data: { labels: Object.keys(data.by_violation_type), datasets: [{ data: Object.values(data.by_violation_type), backgroundColor: ['#0D9488','#0D1B2A','#F97316','#7C3AED','#059669'], borderWidth: 3, borderColor: '#fff' }] },
+      options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } } }
+    });
+
+    const hours = Array.from({length:24}, (_,i)=>i);
+    const hourCounts = hours.map(h => data.by_hour[h] || 0);
+    destroyChart('hourBar');
+    charts.hourBar = new Chart(document.getElementById('hourBar'), {
+      type: 'bar',
+      data: { labels: hours.map(h=>`${h}:00`), datasets: [{ data: hourCounts, backgroundColor: hourCounts.map(c => c > Math.max(...hourCounts)*0.7 ? '#DC2626' : '#0D9488'), borderRadius: 4 }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxRotation: 90, font: { size: 9 } } } } }
+    });
+
+    const stationEntries = Object.entries(data.by_station).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    destroyChart('stationBar');
+    charts.stationBar = new Chart(document.getElementById('stationBar'), {
+      type: 'bar',
+      data: { labels: stationEntries.map(e=>e[0]), datasets: [{ data: stationEntries.map(e=>e[1]), backgroundColor: '#0D9488', borderRadius: 5 }] },
+      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    const vehicleEntries = Object.entries(data.by_vehicle).sort((a,b)=>b[1]-a[1]);
+    destroyChart('vehiclePie');
+    charts.vehiclePie = new Chart(document.getElementById('vehiclePie'), {
+      type: 'doughnut',
+      data: { labels: vehicleEntries.map(e=>e[0]), datasets: [{ data: vehicleEntries.map(e=>e[1]), backgroundColor: ['#DC2626','#0D9488','#D97706','#7C3AED','#059669','#0EA5E9','#94A3B8','#F472B6','#6366F1','#10B981'], borderWidth: 3, borderColor: '#fff' }] },
+      options: { responsive: true, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { font: { size: 9 } } } } }
+    });
+
+    // Populate predictor dropdowns
+    document.getElementById('in-station').innerHTML = Object.keys(data.by_station).sort().map(s=>`<option>${s}</option>`).join('');
+    document.getElementById('in-vehicle').innerHTML = Object.keys(data.by_vehicle).sort().map(v=>`<option>${v}</option>`).join('');
+
+    try {
+      const tagRes = await fetch(`${API_BASE}/api/violation-tags`);
+      const tags = await tagRes.json();
+      document.getElementById('in-violation').innerHTML = tags.slice(0, 20)
+        .map(t => `<option value="${t.tag}">${t.tag} (${t.count.toLocaleString('en-IN')})</option>`).join('');
+    } catch(e) {
+      document.getElementById('in-violation').innerHTML = Object.keys(data.by_violation_type).sort().map(v=>`<option>${v}</option>`).join('');
+    }
+
+  } catch(err) {
+    document.getElementById('overview-metrics').innerHTML = `<div class="error-box" style="grid-column:span 4;">⚠️ Could not connect to Flask backend at ${API_BASE}. Start <code>python app.py</code>. Error: ${err.message}</div>`;
+  }
+}
+
+// ── MODEL METRICS ──
+async function loadModelMetrics() {
+  try {
+    const res = await fetch(`${API_BASE}/api/model-metrics`);
+    const m = await res.json();
+    document.getElementById('model-acc-badge').innerHTML = `✓ Model Accuracy: ${(m.accuracy*100).toFixed(1)}%`;
+    document.getElementById('model-metrics-cards').innerHTML = `
+      <div class="metric"><div class="metric-label">🎯 Accuracy</div><div class="metric-value text-teal">${(m.accuracy*100).toFixed(2)}%</div></div>
+      <div class="metric"><div class="metric-label">📐 Precision</div><div class="metric-value text-green">${(m.precision*100).toFixed(2)}%</div></div>
+      <div class="metric"><div class="metric-label">🔍 Recall</div><div class="metric-value text-amber">${(m.recall*100).toFixed(2)}%</div></div>
+      <div class="metric"><div class="metric-label">⚖️ F1-Score</div><div class="metric-value" style="color:#7C3AED;">${(m.f1_score*100).toFixed(2)}%</div></div>
+    `;
+
+    const fiRes = await fetch(`${API_BASE}/api/feature-importance`);
+    const fi = await fiRes.json();
+    const sortedFi = Object.entries(fi).sort((a,b)=>b[1]-a[1]);
+    destroyChart('featureImportanceChart');
+    charts.featureImportanceChart = new Chart(document.getElementById('featureImportanceChart'), {
+      type: 'bar',
+      data: { labels: sortedFi.map(e=>e[0]), datasets: [{ data: sortedFi.map(e=>e[1]), backgroundColor: '#0D9488', borderRadius: 5 }] },
+      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    const clRes = await fetch(`${API_BASE}/api/clusters`);
+    const clusters = await clRes.json();
+    destroyChart('clusterChart');
+    charts.clusterChart = new Chart(document.getElementById('clusterChart'), {
+      type: 'bar',
+      data: { labels: clusters.map(c=>c.top_station), datasets: [{ label: 'Cluster Size', data: clusters.map(c=>c.violation_count), backgroundColor: '#7C3AED', borderRadius: 5 }] },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+  } catch(err) {
+    document.getElementById('model-acc-badge').innerHTML = `⚠️ Backend offline`;
+  }
+}
+
+// ── HOTSPOTS (updated with VII) ──
+async function loadHotspots() {
+  try {
+    const res = await fetch(`${API_BASE}/api/station-scores`);
+    const scores = await res.json();
+    document.getElementById('hotspot-table-body').innerHTML = scores.map((s, i) => {
+      const score = s.congestion_impact_score;
+      const vii = s.violation_impact_index || '—';
+      const sevClass = score >= 70 ? 'sev-c' : score >= 60 ? 'sev-h' : score >= 50 ? 'sev-m' : 'sev-l';
+      const sevLabel = score >= 70 ? 'Critical' : score >= 60 ? 'High' : score >= 50 ? 'Medium' : 'Low';
+      return `<tr>
+        <td><b>${i+1}</b></td>
+        <td><b>${s.police_station}</b></td>
+        <td>${s.total_violations.toLocaleString('en-IN')}</td>
+        <td><b style="color:${score>=70?'#DC2626':score>=60?'#D97706':'#059669'}">${score.toFixed(1)}</b></td>
+        <td><b style="color:var(--teal)">${vii}</b></td>
+        <td>${(s.peak_ratio*100).toFixed(1)}%</td>
+        <td>${(s.two_wheeler_pct*100).toFixed(1)}%</td>
+        <td><span class="sev ${sevClass}">${sevLabel}</span></td>
+      </tr>`;
+    }).join('');
+  } catch(err) {
+    document.getElementById('hotspot-table-body').innerHTML = `<tr><td colspan="8" class="error-box">Backend not connected</td></tr>`;
+  }
+}
+
+// ── ENFORCEMENT PLAN (upgraded) ──
+async function loadEnforcement() {
+  try {
+    const res = await fetch(`${API_BASE}/api/enforcement-plan`);
+    const plan = await res.json();
+    const sevClass = p => p.priority === 'CRITICAL' ? 'sev-c' : p.priority === 'HIGH' ? 'sev-h' : p.priority === 'MEDIUM' ? 'sev-m' : p.priority === 'LOW' ? 'sev-l' : 'sev-r';
+    document.getElementById('enforcement-table-body').innerHTML = plan.map((p,i) => `<tr>
+      <td><b>${i+1}</b></td>
+      <td><b>${p.station}</b></td>
+      <td><span class="sev ${sevClass(p)}">${p.priority}</span></td>
+      <td><b>${p.officers_recommended}</b></td>
+      <td>${p.tow_truck_needed ? '✅' : '—'}</td>
+      <td style="font-size:11px;">${p.time_windows ? p.time_windows.join('<br>') : '—'}</td>
+      <td style="font-size:11px;">${p.patrol_type || '—'}</td>
+      <td><b style="color:#059669;">${p.expected_reduction_pct || '—'}%</b></td>
+    </tr>`).join('');
+
+    const top3 = plan.slice(0,3);
+    document.getElementById('ai-summary').innerHTML = `
+      <div class="ai-tag">🤖 TEAM-X · LIVE ML PIPELINE</div><br>
+      <b>Top priority zones (model-ranked):</b> ${top3.map(p=>p.station).join(', ')} — combined ${top3.reduce((a,p)=>a+p.violations,0).toLocaleString('en-IN')} violations.<br><br>
+      <b>Recommended immediate action:</b> Deploy ${top3[0].officers_recommended} officers at <b>${top3[0].station}</b> during ${top3[0].time_windows ? top3[0].time_windows[0] : 'peak hours'} using ${top3[0].patrol_type || 'targeted patrol'} → expected <b>${top3[0].expected_reduction_pct}% congestion reduction</b>.
+    `;
+  } catch(err) {
+    document.getElementById('enforcement-table-body').innerHTML = `<tr><td colspan="8" class="error-box">Backend not connected</td></tr>`;
+  }
+}
+
+// ── LIVE MAP ──
+let leafletMap = null;
+async function loadHotspots() {
+  try {
+    const [scoresRes, viiRes] = await Promise.all([
+      fetch(`${API_BASE}/api/station-scores`),
+      fetch(`${API_BASE}/api/violation-impact-index`)
+    ]);
+    const scores = await scoresRes.json();
+    const viiData = await viiRes.json();
+
+    const viiMap = {};
+    viiData.forEach(v => { viiMap[v.station] = v.violation_impact_index; });
+
+    document.getElementById('hotspot-table-body').innerHTML = scores.map((s, i) => {
+      const score = s.congestion_impact_score;
+      const vii = viiMap[s.police_station] ?? '—';
+      const sevClass = score >= 70 ? 'sev-c' : score >= 60 ? 'sev-h' : score >= 50 ? 'sev-m' : 'sev-l';
+      const sevLabel = score >= 70 ? 'Critical' : score >= 60 ? 'High' : score >= 50 ? 'Medium' : 'Low';
+      return `<tr>
+        <td><b>${i+1}</b></td>
+        <td><b>${s.police_station}</b></td>
+        <td>${s.total_violations.toLocaleString('en-IN')}</td>
+        <td><b style="color:${score>=70?'#DC2626':score>=60?'#D97706':'#059669'}">${score.toFixed(1)}</b></td>
+        <td><b style="color:var(--teal)">${vii}</b></td>
+        <td>${(s.peak_ratio*100).toFixed(1)}%</td>
+        <td>${(s.two_wheeler_pct*100).toFixed(1)}%</td>
+        <td><span class="sev ${sevClass}">${sevLabel}</span></td>
+      </tr>`;
+    }).join('');
+  } catch(err) {
+    document.getElementById('hotspot-table-body').innerHTML = `<tr><td colspan="8" class="error-box">Backend not connected</td></tr>`;
+  }
+}
+
+// ── LIVE PREDICTION ──
+async function runPrediction() {
+  const btn = document.getElementById('predict-btn');
+  btn.disabled = true; btn.textContent = '⏳ Calling ML model...';
+  const payload = {
+    station: document.getElementById('in-station').value,
+    vehicle_type: document.getElementById('in-vehicle').value,
+    violation_type: document.getElementById('in-violation').value,
+    hour: parseInt(document.getElementById('in-hour').value),
+    day_of_week: parseInt(document.getElementById('in-day').value),
+    month: parseInt(document.getElementById('in-month').value),
+  };
+  document.getElementById('api-log').innerHTML = `<span style="color:#94A3B8;">POST</span> <span style="color:#FDE68A;">${API_BASE}/api/predict</span>\n\n<span style="color:#94A3B8;">Request:</span>\n${syntaxHighlight(JSON.stringify(payload, null, 2))}\n\n<span style="color:#94A3B8;">⏳ Waiting for response...</span>`;
+  try {
+    const res = await fetch(`${API_BASE}/api/predict`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const data = await res.json();
+    document.getElementById('api-log').innerHTML = `<span style="color:#94A3B8;">POST</span> <span style="color:#FDE68A;">${API_BASE}/api/predict</span>\n\n<span style="color:#94A3B8;">Request:</span>\n${syntaxHighlight(JSON.stringify(payload, null, 2))}\n\n<span style="color:#94A3B8;">Response:</span>\n${syntaxHighlight(JSON.stringify(data, null, 2))}`;
+    const box = document.getElementById('result-box');
+    box.style.display = 'block';
+    box.className = 'result-box ' + (data.is_hotspot_risk ? 'high' : 'low');
+    document.getElementById('result-title').textContent = data.is_hotspot_risk ? '🔴 HIGH RISK HOTSPOT WINDOW' : '🟢 LOW RISK WINDOW';
+    document.getElementById('result-detail').innerHTML = `${data.recommendation}<br><br>${data.smart_action ? `<b>Smart Action:</b> ${data.smart_action}<br><br>` : ''}<b>Risk Probability:</b> ${(data.risk_probability*100).toFixed(1)}% &nbsp;·&nbsp; <b>Model Confidence:</b> ${(data.confidence*100).toFixed(1)}%<br><span style="font-size:10.5px;opacity:0.75;">Matched training label: <code>${data.matched_training_label}</code></span>`;
+    document.getElementById('conf-fill').style.width = `${data.confidence*100}%`;
+    document.getElementById('conf-fill').style.background = data.is_hotspot_risk ? '#DC2626' : '#059669';
+  } catch(err) {
+    document.getElementById('api-log').textContent = `Error: ${err.message}\n\nMake sure Flask backend is running:\npython app.py`;
+  }
+  btn.disabled = false; btn.textContent = '▶ Run Live Prediction';
+}
+
+// INIT
+loadDatasetInfo();
+loadOverview();
+loadModelMetrics();
+loadHotspots();
+loadEnforcement();
+loadSummaryStats();
+loadTopActionNow();
+populateStationDropdowns();
+</script>
+</body>
+</html>

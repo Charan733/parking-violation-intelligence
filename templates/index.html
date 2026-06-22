@@ -1168,11 +1168,19 @@ async function loadModelMetrics() {
 // ── HOTSPOTS (updated with VII) ──
 async function loadHotspots() {
   try {
-    const res = await fetch(`${API_BASE}/api/station-scores`);
-    const scores = await res.json();
+    const [scoresRes, viiRes] = await Promise.all([
+      fetch(`${API_BASE}/api/station-scores`),
+      fetch(`${API_BASE}/api/violation-impact-index`)
+    ]);
+    const scores = await scoresRes.json();
+    const viiData = await viiRes.json();
+
+    const viiMap = {};
+    viiData.forEach(v => { viiMap[v.station] = v.violation_impact_index; });
+
     document.getElementById('hotspot-table-body').innerHTML = scores.map((s, i) => {
       const score = s.congestion_impact_score;
-      const vii = s.violation_impact_index || '—';
+      const vii = viiMap[s.police_station] ?? '—';
       const sevClass = score >= 70 ? 'sev-c' : score >= 60 ? 'sev-h' : score >= 50 ? 'sev-m' : 'sev-l';
       const sevLabel = score >= 70 ? 'Critical' : score >= 60 ? 'High' : score >= 50 ? 'Medium' : 'Low';
       return `<tr>

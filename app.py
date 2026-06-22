@@ -84,11 +84,12 @@ def feature_importance():
 
 @app.route("/api/station-scores")
 def station_scores():
-    """Return Congestion Impact Score per police station, ranked."""
     scores = sorted(predictions_data["station_scores"],
                      key=lambda x: x["congestion_impact_score"], reverse=True)
+    # Add VII score to each station so the hotspot table can show it
+    for s in scores:
+        s["violation_impact_index"] = compute_violation_impact_index(s)
     return jsonify(scores)
-
 
 @app.route("/api/clusters")
 def clusters():

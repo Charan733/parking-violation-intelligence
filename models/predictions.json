@@ -7,25 +7,28 @@
     "date_range": "2023-11-09 to 2024-04-08"
   },
   "model_metrics": {
-    "accuracy": 0.9152,
-    "precision": 0.9756,
-    "recall": 0.9188,
-    "f1_score": 0.9464,
+    "accuracy": 0.9789,
+    "precision": 0.9997,
+    "recall": 0.9743,
+    "f1_score": 0.9869,
     "n_estimators": 150,
     "training_samples": 238756,
     "test_samples": 59689
   },
   "feature_importance": {
-    "station_enc": 0.6461,
-    "hour": 0.1388,
-    "violation_enc": 0.0527,
-    "is_peak": 0.0467,
-    "vehicle_enc": 0.036,
-    "is_peak_morning": 0.0311,
-    "month": 0.0205,
-    "day_of_week": 0.0179,
-    "is_peak_evening": 0.0069,
-    "is_weekend": 0.0034
+    "station_violation_density": 0.4989,
+    "hour": 0.1344,
+    "station_peak_ratio": 0.096,
+    "station_two_wheeler_pct": 0.0923,
+    "station_enc": 0.0859,
+    "is_peak": 0.0368,
+    "is_peak_morning": 0.0195,
+    "is_peak_evening": 0.0113,
+    "violation_enc": 0.0091,
+    "vehicle_enc": 0.0053,
+    "day_of_week": 0.0047,
+    "month": 0.0046,
+    "is_weekend": 0.0011
   },
   "station_scores": [
     {
